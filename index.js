@@ -4,9 +4,11 @@ import {
   createAudioPlayer, 
   createAudioResource, 
   AudioPlayerStatus,
-  StreamType
+  StreamType,
+  demuxProbe
 } from '@discordjs/voice';
-import play from 'play-dl';
+import youtubedl from 'youtube-dl-exec';
+import yts from 'yt-search';
 import { config } from 'dotenv';
 
 config();
@@ -145,13 +147,13 @@ client.on('interactionCreate', async (interaction) => {
       if (!query.includes('youtube.com') && !query.includes('youtu.be')) {
         // ค้นหาจากชื่อเพลง
         try {
-          const searchResults = await play.search(query, { limit: 1 });
-          if (!searchResults || searchResults.length === 0) {
+          const searchResults = await yts(query);
+          if (!searchResults || !searchResults.videos || searchResults.videos.length === 0) {
             return interaction.editReply({ content: '❌ หาเพลงไม่เจอเลย ลองใหม่สิ!', embeds: [], components: [] });
           }
           
-          videoUrl = searchResults[0].url;
-          console.log(`✅ เจอเพลง: ${searchResults[0].title}`);
+          videoUrl = searchResults.videos[0].url;
+          console.log(`✅ เจอเพลง: ${searchResults.videos[0].title}`);
         } catch (searchError) {
           console.error('Search error:', searchError);
           return interaction.editReply({ content: '❌ เกิดข้อผิดพลาดในการค้นหา ลองใช้ YouTube URL โดยตรงแทน!', embeds: [], components: [] });
@@ -161,17 +163,22 @@ client.on('interactionCreate', async (interaction) => {
       // ดึงข้อมูลวิดีโอ
       let videoInfo;
       try {
-        videoInfo = await play.video_info(videoUrl);
-      } catch (playError) {
-        console.error('Play-dl error:', playError);
+        videoInfo = await youtubedl(videoUrl, {
+          dumpSingleJson: true,
+          noCheckCertificates: true,
+          noWarnings: true,
+          preferFreeFormats: true
+        });
+      } catch (ytdlError) {
+        console.error('Youtube-dl error:', ytdlError);
         return interaction.editReply({ content: '❌ ไม่สามารถดึงข้อมูลวิดีโอได้ ตรวจสอบ URL หรือลองใหม่อีกครั้ง!', embeds: [], components: [] });
       }
       
       const song = {
-        title: videoInfo.video_details.title,
-        url: videoInfo.video_details.url,
-        duration: videoInfo.video_details.durationInSec,
-        thumbnail: videoInfo.video_details.thumbnails[0].url,
+        title: videoInfo.title,
+        url: videoInfo.webpage_url,
+        duration: videoInfo.duration,
+        thumbnail: videoInfo.thumbnail,
         requester: interaction.user.tag
       };
       
@@ -424,10 +431,20 @@ async function playSong(guild, song) {
   try {
     console.log(`🎵 กำลังเล่น: ${song.title}`);
     
-    const stream = await play.stream(song.url);
+    // ใช้ yt-dlp stream
+    const process = youtubedl.exec(song.url, {
+      output: '-',
+      format: 'bestaudio',
+      noCheckCertificates: true,
+      noWarnings: true,
+      preferFreeFormats: true
+    });
     
-    const resource = createAudioResource(stream.stream, {
-      inputType: stream.type
+    const stream = process.stdout;
+    const { stream: audioStream, type } = await demuxProbe(stream);
+    
+    const resource = createAudioResource(audioStream, {
+      inputType: type
     });
 
     serverQueue.player.play(resource);

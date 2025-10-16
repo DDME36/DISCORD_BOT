@@ -2,8 +2,9 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-# Install ffmpeg
-RUN apk add --no-cache ffmpeg python3 make g++
+# Install yt-dlp and ffmpeg
+RUN apk add --no-cache ffmpeg python3 py3-pip && \
+    pip3 install --break-system-packages yt-dlp
 
 # Copy package files
 COPY package*.json ./

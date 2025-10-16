@@ -19,7 +19,8 @@
   "dependencies": {
     "discord.js": "^14.14.1",
     "@discordjs/voice": "^0.17.0",
-    "play-dl": "^1.9.7",
+    "youtube-dl-exec": "^3.0.10",
+    "yt-search": "^2.11.0",
     "ffmpeg-static": "^5.2.0",
     "dotenv": "^16.4.5",
     "libsodium-wrappers": "^0.7.13",
