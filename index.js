@@ -6,16 +6,10 @@ import {
   AudioPlayerStatus,
   StreamType
 } from '@discordjs/voice';
-import ytdl from '@distube/ytdl-core';
-import yts from 'youtube-sr';
+import play from 'play-dl';
 import { config } from 'dotenv';
 
 config();
-
-// ตั้งค่า ytdl agent พร้อม cookies (ถ้ามี)
-const agent = ytdl.createAgent(undefined, {
-  localAddress: undefined
-});
 
 const client = new Client({
   intents: [
@@ -151,7 +145,7 @@ client.on('interactionCreate', async (interaction) => {
       if (!query.includes('youtube.com') && !query.includes('youtu.be')) {
         // ค้นหาจากชื่อเพลง
         try {
-          const searchResults = await yts.default.search(query, { limit: 1, type: 'video' });
+          const searchResults = await play.search(query, { limit: 1 });
           if (!searchResults || searchResults.length === 0) {
             return interaction.editReply({ content: '❌ หาเพลงไม่เจอเลย ลองใหม่สิ!', embeds: [], components: [] });
           }
@@ -165,18 +159,19 @@ client.on('interactionCreate', async (interaction) => {
       }
       
       // ดึงข้อมูลวิดีโอ
+      let videoInfo;
       try {
-        videoInfo = await ytdl.getInfo(videoUrl, { agent });
-      } catch (ytdlError) {
-        console.error('YTDL error:', ytdlError);
+        videoInfo = await play.video_info(videoUrl);
+      } catch (playError) {
+        console.error('Play-dl error:', playError);
         return interaction.editReply({ content: '❌ ไม่สามารถดึงข้อมูลวิดีโอได้ ตรวจสอบ URL หรือลองใหม่อีกครั้ง!', embeds: [], components: [] });
       }
       
       const song = {
-        title: videoInfo.videoDetails.title,
-        url: videoInfo.videoDetails.video_url,
-        duration: parseInt(videoInfo.videoDetails.lengthSeconds),
-        thumbnail: videoInfo.videoDetails.thumbnails[videoInfo.videoDetails.thumbnails.length - 1].url,
+        title: videoInfo.video_details.title,
+        url: videoInfo.video_details.url,
+        duration: videoInfo.video_details.durationInSec,
+        thumbnail: videoInfo.video_details.thumbnails[0].url,
         requester: interaction.user.tag
       };
       
@@ -429,24 +424,10 @@ async function playSong(guild, song) {
   try {
     console.log(`🎵 กำลังเล่น: ${song.title}`);
     
-    // ตรวจสอบว่า URL มี format ที่เล่นได้
-    const info = await ytdl.getInfo(song.url, { agent });
-    const format = ytdl.chooseFormat(info.formats, { quality: 'lowestaudio', filter: 'audioonly' });
+    const stream = await play.stream(song.url);
     
-    if (!format || !format.url) {
-      throw new Error('ไม่พบ audio format ที่เล่นได้');
-    }
-    
-    console.log(`🔗 Stream URL: ${format.url.substring(0, 50)}...`);
-    
-    const stream = ytdl(song.url, {
-      format: format,
-      highWaterMark: 1 << 25,
-      agent
-    });
-    
-    const resource = createAudioResource(stream, {
-      inputType: StreamType.Arbitrary
+    const resource = createAudioResource(stream.stream, {
+      inputType: stream.type
     });
 
     serverQueue.player.play(resource);
