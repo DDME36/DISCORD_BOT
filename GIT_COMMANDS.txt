@@ -1,0 +1,38 @@
+# คำสั่ง Git สำหรับอัพโค้ดขึ้น GitHub
+
+# ขั้นตอนที่ 1: เริ่มต้น Git (ทำครั้งเดียว)
+git init
+git add .
+git commit -m "Initial commit - Discord Music Bot"
+git branch -M main
+git remote add origin https://github.com/DDME36/DISCORD_BOT.git
+
+# ขั้นตอนที่ 2: Push ขึ้น GitHub
+git push -u origin main
+
+# ===================================
+# หลังจากนี้ ถ้าแก้ไขโค้ด ใช้แค่ 3 คำสั่งนี้:
+# ===================================
+
+git add .
+git commit -m "อธิบายว่าแก้อะไร"
+git push
+
+# ===================================
+# ตัวอย่างการใช้งาน:
+# ===================================
+
+# แก้สี embed
+git add .
+git commit -m "เปลี่ยนสี embed"
+git push
+
+# เพิ่มคำสั่งใหม่
+git add .
+git commit -m "เพิ่มคำสั่ง /volume"
+git push
+
+# แก้ bug
+git add .
+git commit -m "แก้ bug เพลงไม่เล่น"
+git push
