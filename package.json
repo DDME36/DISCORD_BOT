@@ -4,10 +4,14 @@
   "description": "Discord bot เล่นเพลง 24/7",
   "main": "index.js",
   "type": "module",
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
   "scripts": {
     "start": "node index.js",
     "dev": "node index.js",
-    "deploy": "node deploy-commands.js"
+    "build": "npm install --legacy-peer-deps"
   },
   "keywords": ["discord", "bot", "music"],
   "author": "",
