@@ -8,8 +8,8 @@ RUN apk add --no-cache ffmpeg python3 make g++
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install --legacy-peer-deps
+# Remove old lock file and install fresh
+RUN rm -f package-lock.json && npm install --legacy-peer-deps
 
 # Copy source code
 COPY . .
